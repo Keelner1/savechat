@@ -25,11 +25,17 @@ jobs:
       - name: Run script
         run: node save-twitch-chat.js
 
-      - name: Commit chat log
+      - name: Configure git for GitHub Actions
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Commit chat log
+        run: |
           git add chat_log.json
           git commit -m "Update chat log"
-          git push
-        continue-on-error: true # nie wywołuj błędu gdy nie ma zmian
+      - name: Push chat log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
+        continue-on-error: true
+
