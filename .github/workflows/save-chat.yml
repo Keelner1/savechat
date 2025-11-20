@@ -1,0 +1,35 @@
+name: Save Twitch Chat
+
+on:
+  schedule:
+    # co 20 minut
+    - cron: '*/20 * * * *'
+  workflow_dispatch: # pozwala wywołać ręcznie z GUI
+
+jobs:
+  save-chat:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install node-fetch@2
+
+      - name: Run script
+        run: node save-twitch-chat.js
+
+      - name: Commit chat log
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add chat_log.json
+          git commit -m "Update chat log"
+          git push
+        continue-on-error: true # nie wywołuj błędu gdy nie ma zmian
