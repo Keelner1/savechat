@@ -3,7 +3,7 @@ name: Save Twitch Chat
 on:
   schedule:
     # co 20 minut
-    - cron: '*/20 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch: # pozwala wywołać ręcznie z GUI
 
 jobs:
