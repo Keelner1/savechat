@@ -8,7 +8,9 @@ async function run() {
   const data = await response.json();
 
   // Wyciągnij nick, tekst, timestamp dla czytelności
-  const messages = data.messages.map(msg => {
+  const messages = data.messages
+  .filter(msg => typeof msg.message === 'string') // filtrujemy tylko poprawne
+  .map(msg => {
     const match = msg.message.match(/^:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
     return {
       id: msg.id,
@@ -19,8 +21,10 @@ async function run() {
     };
   });
 
+
   // Zapisz do pliku w repozytorium
   fs.writeFileSync('chat_log.json', JSON.stringify(messages, null, 2));
 }
 
 run();
+
