@@ -2,7 +2,7 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 
 async function run() {
-  const channel = "Nimuena_"; // podaj swój kanał Twitch
+  const channel = "keelner2"; // podaj swój kanał Twitch
   const url = `https://recent-messages.robotty.de/api/v2/recent-messages/${channel}`;
   const response = await fetch(url);
   const data = await response.json();
@@ -27,5 +27,6 @@ async function run() {
 }
 
 run();
+
 
 
