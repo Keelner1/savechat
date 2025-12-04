@@ -18,38 +18,53 @@ async function run() {
     return;
   }
 
-  // 1. parsowanie jednej linii IRC -> { nick, text, time }
+  // helper: formatowanie daty do "YYYY-MM-DD HH:mm:ss" w strefie UTC+1
+  function formatLocalPlus1(ms) {
+    const date = new Date(ms + 60 * 60 * 1000); // +1 godzina
+    const pad = n => String(n).padStart(2, "0");
+
+    const year = date.getUTCFullYear();
+    const month = pad(date.getUTCMonth() + 1);
+    const day = pad(date.getUTCDate());
+    const hour = pad(date.getUTCHours());
+    const minute = pad(date.getUTCMinutes());
+    const second = pad(date.getUTCSeconds());
+
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  }
+
+  // parsowanie jednej linii IRC -> { nick, text, time }
   function parseLine(raw) {
     if (typeof raw !== "string") return null;
 
     // timestamp z taga tmi-sent-ts=...
-    let time = null;
+    let timeFormatted = null;
     const tsMatch = raw.match(/tmi-sent-ts=(\d+)/);
     if (tsMatch) {
-      const ms = Number(tsMatch[1]);      // ms od epoki
-      time = new Date(ms).toISOString(); // prawdziwy czas wysłania
+      const ms = Number(tsMatch[1]);       // ms od epoki (UTC)
+      timeFormatted = formatLocalPlus1(ms);
     } else {
-      time = new Date().toISOString();   // awaryjnie: czas zapisu
+      timeFormatted = formatLocalPlus1(Date.now());
     }
 
-    // nick + tekst wiadomości
+    // nick + tekst
     const m = raw.match(/:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
     if (!m) return null;
 
     return {
       nick: m[1],
       text: m[2],
-      time: time
+      time: timeFormatted   // np. "2025-12-04 20:15:32"
     };
   }
 
   const cleaned = data.messages
-    .map(parseLine)     // data.messages to tablica STRINGÓW
+    .map(parseLine)
     .filter(x => x !== null);
 
   console.log(`Nowe wiadomości w tym runie: ${cleaned.length}`);
 
-  // 2. wczytaj dotychczasowy plik (jeśli istnieje) – żeby dopisywać historię
+  // wczytaj dotychczasowy plik, żeby dopisywać
   let previous = [];
   try {
     const raw = fs.readFileSync("chat_log.json", "utf8");
@@ -59,7 +74,6 @@ async function run() {
     previous = [];
   }
 
-  // 3. połącz stare + nowe
   const merged = [...previous, ...cleaned];
 
   fs.writeFileSync("chat_log.json", JSON.stringify(merged, null, 2));
