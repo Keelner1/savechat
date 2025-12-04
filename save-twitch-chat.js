@@ -2,7 +2,7 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 
 async function run() {
-  const channel = "keelner2"; // <- tu Twój kanał
+  const channel = "keelner2"; // <-- tu Twój kanał
   const url = `https://recent-messages.robotty.de/api/v2/recent-messages/${channel}`;
 
   const response = await fetch(url, {
@@ -18,7 +18,7 @@ async function run() {
     return;
   }
 
-  // funkcja: jeden surowy string IRC -> { nick, text }
+  // 1. parsowanie jednej linii IRC -> { nick, text }
   function parseLine(raw) {
     if (typeof raw !== "string") return null;
     const m = raw.match(/:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
@@ -29,14 +29,27 @@ async function run() {
     };
   }
 
-  // TU jest najważniejsza zmiana: parsujemy bezpośrednio data.messages (stringi),
-  // NIE m.message
   const cleaned = data.messages
-    .map(parseLine)
+    .map(parseLine)     // data.messages to tablica STRINGÓW
     .filter(x => x !== null);
 
-  fs.writeFileSync("chat_log.json", JSON.stringify(cleaned, null, 2));
-  console.log(`Zapisano ${cleaned.length} wiadomości do chat_log.json`);
+  console.log(`Nowe wiadomości w tym runie: ${cleaned.length}`);
+
+  // 2. wczytaj dotychczasowy plik (jeśli jest)
+  let previous = [];
+  try {
+    const raw = fs.readFileSync("chat_log.json", "utf8");
+    previous = JSON.parse(raw);
+    if (!Array.isArray(previous)) previous = [];
+  } catch (e) {
+    previous = [];
+  }
+
+  // 3. połącz stare + nowe
+  const merged = [...previous, ...cleaned];
+
+  fs.writeFileSync("chat_log.json", JSON.stringify(merged, null, 2));
+  console.log(`Łącznie zapisano ${merged.length} wiadomości do chat_log.json`);
 }
 
 run().catch(err => {
