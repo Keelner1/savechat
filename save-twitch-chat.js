@@ -21,23 +21,35 @@ async function run() {
   // 1. parsowanie jednej linii IRC -> { nick, text, time }
   function parseLine(raw) {
     if (typeof raw !== "string") return null;
+
+    // timestamp z taga tmi-sent-ts=...
+    let time = null;
+    const tsMatch = raw.match(/tmi-sent-ts=(\d+)/);
+    if (tsMatch) {
+      const ms = Number(tsMatch[1]);      // ms od epoki
+      time = new Date(ms).toISOString(); // prawdziwy czas wysłania
+    } else {
+      time = new Date().toISOString();   // awaryjnie: czas zapisu
+    }
+
+    // nick + tekst wiadomości
     const m = raw.match(/:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
     if (!m) return null;
 
     return {
       nick: m[1],
       text: m[2],
-      time: new Date().toISOString() // czas zapisu (data + godzina)
+      time: time
     };
   }
 
   const cleaned = data.messages
-    .map(parseLine)
+    .map(parseLine)     // data.messages to tablica STRINGÓW
     .filter(x => x !== null);
 
   console.log(`Nowe wiadomości w tym runie: ${cleaned.length}`);
 
-  // 2. wczytaj dotychczasowy plik (jeśli jest)
+  // 2. wczytaj dotychczasowy plik (jeśli istnieje) – żeby dopisywać historię
   let previous = [];
   try {
     const raw = fs.readFileSync("chat_log.json", "utf8");
