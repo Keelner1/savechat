@@ -1,1 +1,110 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <title>Twitch chat log</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; }
+    input { padding: 6px; width: 300px; margin-right: 8px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 4px 6px; font-size: 13px; }
+    th { background: #eee; position: sticky; top: 0; }
+    tr:nth-child(even) { background: #f9f9f9; }
+  </style>
+</head>
+<body>
+  <h1>Twitch chat log</h1>
+
+  <div>
+    <input id="search" type="text" placeholder="Szukaj w nicku / treści..." />
+    <button id="clear">Wyczyść</button>
+  </div>
+
+  <div id="info"></div>
+
+  <table id="table">
+    <thead>
+      <tr>
+        <th>Czas</th>
+        <th>Nick</th>
+        <th>Tekst</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // ŚCIEŻKA DO JSONA – jeśli index.html jest w tym samym katalogu co chat_log.json:
+    const JSON_URL = "chat_log.json";
+
+    const searchInput = document.getElementById("search");
+    const clearBtn = document.getElementById("clear");
+    const info = document.getElementById("info");
+    const tbody = document.querySelector("#table tbody");
+
+    let allMessages = [];
+
+    async function loadData() {
+      info.textContent = "Ładowanie chat_log.json...";
+      try {
+        const res = await fetch(JSON_URL + "?t=" + Date.now());
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        allMessages = await res.json();
+        if (!Array.isArray(allMessages)) allMessages = [];
+        info.textContent = "Załadowano " + allMessages.length + " wiadomości.";
+        render(allMessages);
+      } catch (e) {
+        console.error(e);
+        info.textContent = "Błąd ładowania chat_log.json: " + e.message;
+      }
+    }
+
+    function render(list) {
+      tbody.innerHTML = "";
+      for (const msg of list) {
+        const tr = document.createElement("tr");
+        const tdTime = document.createElement("td");
+        const tdNick = document.createElement("td");
+        const tdText = document.createElement("td");
+
+        tdTime.textContent = msg.time || "";
+        tdNick.textContent = msg.nick || "";
+        tdText.textContent = msg.text || "";
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdNick);
+        tr.appendChild(tdText);
+        tbody.appendChild(tr);
+      }
+    }
+
+    function applyFilter() {
+      const q = searchInput.value.toLowerCase().trim();
+      if (!q) {
+        render(allMessages);
+        return;
+      }
+      const filtered = allMessages.filter(m =>
+        (m.nick && m.nick.toLowerCase().includes(q)) ||
+        (m.text && m.text.toLowerCase().includes(q))
+      );
+      render(filtered);
+      info.textContent = "Wyniki: " + filtered.length + " / " + allMessages.length;
+    }
+
+    searchInput.addEventListener("input", () => {
+      // lekkie opóźnienie niepotrzebne, filtr jest prosty
+      applyFilter();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      render(allMessages);
+      info.textContent = "Załadowano " + allMessages.length + " wiadomości.";
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
 
