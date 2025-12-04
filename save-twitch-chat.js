@@ -2,7 +2,7 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 
 async function run() {
-  const channel = "keelner2"; // <-- tu Twój kanał
+  const channel = "keelner2"; // <-- Twój kanał
   const url = `https://recent-messages.robotty.de/api/v2/recent-messages/${channel}`;
 
   const response = await fetch(url, {
@@ -18,19 +18,21 @@ async function run() {
     return;
   }
 
-  // 1. parsowanie jednej linii IRC -> { nick, text }
+  // 1. parsowanie jednej linii IRC -> { nick, text, time }
   function parseLine(raw) {
     if (typeof raw !== "string") return null;
     const m = raw.match(/:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
     if (!m) return null;
+
     return {
       nick: m[1],
-      text: m[2]
+      text: m[2],
+      time: new Date().toISOString() // czas zapisu (data + godzina)
     };
   }
 
   const cleaned = data.messages
-    .map(parseLine)     // data.messages to tablica STRINGÓW
+    .map(parseLine)
     .filter(x => x !== null);
 
   console.log(`Nowe wiadomości w tym runie: ${cleaned.length}`);
