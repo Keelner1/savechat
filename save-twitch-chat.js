@@ -2,44 +2,26 @@ const fs = require("fs");
 const fetch = require("node-fetch");
 
 async function run() {
-  const channel = "keelner2"; // <-- tu możesz zmienić na swój kanał
+  const channel = "keelner2"; // upewnij się, że to ten sam kanał co w przeglądarce
   const url = `https://recent-messages.robotty.de/api/v2/recent-messages/${channel}`;
 
   const response = await fetch(url, {
-    headers: {
-      "User-Agent": "savechat-github-action"
-    }
+    headers: { "User-Agent": "savechat-github-action" }
   });
 
   const data = await response.json();
 
-  console.log("API response (skrócone):");
-  console.log(`messages: ${Array.isArray(data.messages) ? data.messages.length : "brak"}`);
+  console.log("PEŁNA odpowiedź z API:");
+  console.log(JSON.stringify(data, null, 2));
 
   if (!Array.isArray(data.messages)) {
-    console.log("Brak pola messages albo zły format, nic nie zapisuję.");
+    console.log("Brak poprawnego data.messages – nic nie zapisuję.");
     return;
   }
 
-  // parsowanie pojedynczej linii IRC -> { nick, text }
-  function parseLine(raw) {
-    if (typeof raw !== "string") return null;
-    const m = raw.match(/:([^!]+)!.* PRIVMSG #[^ ]+ :(.*)$/);
-    if (!m) return null;
-    return {
-      nick: m[1],
-      text: m[2]
-    };
-  }
-
-  const cleaned = data.messages
-    .map(m => parseLine(m.message)) // m.message to ten długi string z Twojego przykładu
-    .filter(x => x !== null);
-
-  // zapis do pliku
-  fs.writeFileSync("chat_log.json", JSON.stringify(cleaned, null, 2));
-
-  console.log(`Zapisano ${cleaned.length} wiadomości do chat_log.json`);
+  // UWAGA: na razie zapisujemy surowe data.messages BEZ parsowania
+  fs.writeFileSync("chat_log.json", JSON.stringify(data.messages, null, 2));
+  console.log(`Zapisano raw messages: ${data.messages.length}`);
 }
 
 run().catch(err => {
